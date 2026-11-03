@@ -1,6 +1,6 @@
 import React from 'react';
 import { CalendarDays, Video } from 'lucide-react';
-import type { Meeting } from '../../types/meeting';
+import { isMeetingCompleted, type Meeting } from '../../types/meeting';
 
 interface SchedulePanelProps {
   meetings: Meeting[];
@@ -12,7 +12,7 @@ const accents = ['green', 'purple', 'amber', 'blue'] as const;
 export const SchedulePanel: React.FC<SchedulePanelProps> = ({ meetings, onOpenDetails }) => {
   const today = new Date().toISOString().split('T')[0];
   const upcoming = meetings
-    .filter(meeting => meeting.date === today && !meeting.isCompleted && meeting.status !== 'cancelled')
+    .filter(meeting => meeting.date === today && !isMeetingCompleted(meeting) && meeting.status !== 'cancelled')
     .slice(0, 10);
 
   return (
@@ -20,14 +20,17 @@ export const SchedulePanel: React.FC<SchedulePanelProps> = ({ meetings, onOpenDe
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-[#1b251e]">Your schedule</h2>
-          <p className="mt-0.5 text-xs text-[#728078]">Today&apos;s upcoming events from Google Calendar</p>
+          <p className="mt-0.5 text-xs text-[#728078]">Today&apos;s upcoming events from Zoho Calendar</p>
         </div>
         <span className="rounded-xl bg-[#eef8ee] p-2 text-[#3c9b51]"><CalendarDays className="h-4 w-4" /></span>
       </div>
 
       <div className="mt-5 space-y-2.5">
         {upcoming.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#cbd9ce] px-4 py-10 text-center text-sm text-[#748178]">No upcoming events today.</div>
+          <div className="rounded-2xl border border-dashed border-[#cbd9ce] px-4 py-10 text-center">
+            <p className="text-sm font-semibold text-[#52645a]">No upcoming events today.</p>
+            <p className="mt-1 text-xs text-[#87938b]">Events from Zoho Calendar will appear here when available.</p>
+          </div>
         ) : upcoming.map((meeting, index) => {
           const accent = accents[index % accents.length];
           const palette = {
@@ -48,7 +51,7 @@ export const SchedulePanel: React.FC<SchedulePanelProps> = ({ meetings, onOpenDe
                 <span className="block truncate text-sm font-bold text-[#27332b]">{meeting.title}</span>
                 <span className="mt-0.5 block truncate text-[11px] text-[#728078]">{meeting.startTime} - {meeting.endTime}</span>
               </span>
-              {meeting.meetLink && <Video className="h-4 w-4 shrink-0 text-[#4c9d57]" />}
+              {meeting.meetingLink && <Video className="h-4 w-4 shrink-0 text-[#4c9d57]" />}
             </button>
           );
         })}

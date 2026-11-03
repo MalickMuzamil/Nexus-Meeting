@@ -1,11 +1,11 @@
 import type { DateFilter, Meeting } from '../types/meeting';
 
-const CACHE_KEY = 'nexus_calendar_session_cache_v1';
+const CACHE_KEY = 'nexus_zoho_calendar_session_cache_v3';
 
 type CacheStore = Record<string, Meeting[]>;
 
 const makeKey = (filter: DateFilter, userEmail: string) =>
-  `${userEmail || 'google-user'}:${filter.startDate}:${filter.endDate}`;
+  `${userEmail || 'zoho-user'}:${filter.startDate}:${filter.endDate}`;
 
 const readStore = (): CacheStore => {
   try {
@@ -33,5 +33,6 @@ export const calendarCache = {
 
   clear(): void {
     sessionStorage.removeItem(CACHE_KEY);
+    sessionStorage.removeItem('nexus_calendar_session_cache_v2');
   }
 };

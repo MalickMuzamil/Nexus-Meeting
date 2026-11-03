@@ -111,7 +111,7 @@ export const DateFilterBar: React.FC<DateFilterBarProps> = ({
             <h2 className="text-sm sm:text-base md:text-lg font-semibold text-[#1b251e] flex flex-wrap items-center gap-1.5 sm:gap-2">
               Calendar range
               <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#edf8ee] border border-[#cfe6d0] text-[#429151] font-normal">
-                Google Calendar Sync
+                Zoho Calendar Sync
               </span>
             </h2>
             <p className="hidden sm:block text-xs text-[#728078]">
@@ -235,4 +235,3 @@ export const DateFilterBar: React.FC<DateFilterBarProps> = ({
     </div>
   );
 };
-

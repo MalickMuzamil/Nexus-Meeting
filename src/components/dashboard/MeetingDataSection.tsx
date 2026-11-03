@@ -53,6 +53,17 @@ export const MeetingDataSection: React.FC<MeetingDataSectionProps> = ({
           <button type="button" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-[#eaf4e9] disabled:opacity-40">Next<ChevronRight className="h-4 w-4" /></button>
         </nav>}
       </>
-    ) : <div className="rounded-[22px] border border-dashed border-[#cbd9ce] bg-white/60 py-16 text-center text-sm text-[#728078]">No meetings found for this view.</div>}
+    ) : (
+      <div className="rounded-[22px] border border-dashed border-[#cbd9ce] bg-white/60 px-5 py-12 text-center">
+        <p className="text-sm font-semibold text-[#52645a]">
+          {meetings.length === 0 ? 'No calendar events available for this date range.' : 'No meetings match this search or filter.'}
+        </p>
+        <p className="mt-1 text-xs text-[#87938b]">
+          {meetings.length === 0
+            ? 'Choose another date range or check back after events are added to Zoho Calendar.'
+            : 'Try a different search term or reset the quick filters.'}
+        </p>
+      </div>
+    )}
   </section>
 );

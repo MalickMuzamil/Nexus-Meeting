@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Meeting, DateFilter } from './types/meeting';
 import { parseShareTokenFromURL, decodeSharePayloadFromToken } from './types/shareUtils';
-import { googleCalendarService } from './services/googleCalendar';
-import { googleAuthService } from './services/googleAuth';
+import { zohoCalendarService } from './services/zohoCalendar';
+import {
+  getStoredZohoSession,
+  zohoAuthService,
+  ZOHO_SESSION_MAX_AGE_MS
+} from './services/zohoAuth';
 import { calendarCache } from './services/calendarCache';
 import { CalendarAccessGate } from './components/auth/CalendarAccessGate';
 import { DateFilterBar } from './components/controls/DateFilterBar';
@@ -32,20 +35,23 @@ export const App: React.FC = () => {
     return <SharedViewPage meetings={sharedPayload.meetings} ownerName={sharedPayload.ownerName} />;
   }
 
-  // ── Google Calendar authorization ─────────────────────────────────────────
-  const [googleToken, setGoogleToken] = useState<string>(() => {
-    const storedToken = sessionStorage.getItem('nexus_google_token');
-    const storedProfile = sessionStorage.getItem('nexus_google_user_email');
-    const currentScope = sessionStorage.getItem('nexus_google_scope_version');
-    return storedToken && storedProfile && currentScope === '2' ? storedToken : '';
+  // ── Zoho Calendar authorization ────────────────────────────────────────────
+  const [authorizationResponse] = useState(() => zohoAuthService.consumeAuthorizationResponse());
+  const [storedZohoSession] = useState(() => {
+    const storedSession = getStoredZohoSession();
+    if (!storedSession) calendarCache.clear();
+    return storedSession;
   });
-  const [ownerName, setOwnerName] = useState(() => sessionStorage.getItem('nexus_google_user_name') || 'Nexus user');
-  const [ownerEmail, setOwnerEmail] = useState(() => sessionStorage.getItem('nexus_google_user_email') || '');
-  const [authError, setAuthError] = useState('');
-  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [zohoToken, setZohoToken] = useState<string>(storedZohoSession?.accessToken || '');
+  const [zohoLocation, setZohoLocation] = useState(storedZohoSession?.location || 'us');
+  const [ownerName, setOwnerName] = useState(storedZohoSession?.profile.name || 'Nexus user');
+  const [ownerEmail, setOwnerEmail] = useState(storedZohoSession?.profile.email || '');
+  const [authError, setAuthError] = useState(authorizationResponse?.error || '');
+  const [isAuthorizing, setIsAuthorizing] = useState(Boolean(authorizationResponse?.accessToken));
   const [connectionState, setConnectionState] = useState<'connected' | 'connecting' | 'error'>(() =>
-    sessionStorage.getItem('nexus_google_scope_version') === '2' ? 'connected' : 'connecting'
+    storedZohoSession ? 'connected' : authorizationResponse?.error ? 'error' : 'connecting'
   );
+  const authorizationHandled = useRef(false);
   const [darkMode, setDarkMode] = useState(() => sessionStorage.getItem('nexus_theme') === 'dark');
 
   // ── Date Filter (defaults to today) ──────────────────────────────────────
@@ -82,59 +88,112 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleZohoConnect = () => {
+    setAuthError('');
+    setIsAuthorizing(true);
+    setConnectionState('connecting');
+    try {
+      zohoAuthService.startAuthorization();
+    } catch (error) {
+      setIsAuthorizing(false);
+      setConnectionState('error');
+      setAuthError(error instanceof Error ? error.message : 'Zoho Calendar authorization failed.');
+    }
+  };
+
+  useEffect(() => {
+    if (!zohoToken) return;
+
+    const sessionStartedAt = Number(sessionStorage.getItem('nexus_zoho_session_started_at'));
+    const tokenExpiresAt = Number(sessionStorage.getItem('nexus_zoho_token_expires_at'));
+    const expiresIn = Math.min(
+      sessionStartedAt + ZOHO_SESSION_MAX_AGE_MS,
+      tokenExpiresAt
+    ) - Date.now();
+    const expireSession = () => {
+      zohoAuthService.clearSession();
+      calendarCache.clear();
+      setZohoToken('');
+      setZohoLocation('us');
+      setOwnerName('Nexus user');
+      setOwnerEmail('');
+      setMeetings([]);
+      setConnectionState('error');
+      setAuthError('Your Zoho Calendar access expired. Reconnect to continue.');
+    };
+
+    if (!Number.isFinite(expiresIn) || expiresIn <= 0) {
+      expireSession();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(expireSession, expiresIn);
+    return () => window.clearTimeout(timeoutId);
+  }, [zohoToken]);
+
   // ── Load Meetings ─────────────────────────────────────────────────────────
   const loadMeetings = async (filter: DateFilter, forceRefresh = false) => {
-    const userEmail = sessionStorage.getItem('nexus_google_user_email') || ownerEmail;
+    const userEmail = ownerEmail;
+    let calendarMeetings: Meeting[] | null = null;
     if (!forceRefresh) {
       const cached = calendarCache.get(filter, userEmail);
       if (cached) {
-        setMeetings(cached);
-        setIsLoading(false);
-        return;
+        calendarMeetings = cached;
       }
     }
     setIsLoading(true);
     try {
-      const fetched = await googleCalendarService.fetchMeetings(filter, googleToken);
-      setMeetings(fetched);
-      calendarCache.set(filter, userEmail, fetched);
+      if (!calendarMeetings) {
+        calendarMeetings = await zohoCalendarService.fetchMeetings(filter, zohoToken, zohoLocation);
+        setMeetings(calendarMeetings);
+      }
+      setMeetings(calendarMeetings);
+      calendarCache.set(filter, userEmail, calendarMeetings);
+      setAuthError('');
     } catch (err) {
       console.error('Error fetching meetings:', err);
       if (err instanceof Error && (err.message.includes('401') || err.message.includes('access expired'))) {
-        sessionStorage.removeItem('nexus_google_token');
-        sessionStorage.removeItem('nexus_google_user_name');
-        sessionStorage.removeItem('nexus_google_user_email');
-        sessionStorage.removeItem('nexus_google_scope_version');
-        setGoogleToken('');
-        setConnectionState('connecting');
+        zohoAuthService.clearSession();
+        calendarCache.clear();
+        setMeetings([]);
+        setZohoToken('');
+        setConnectionState('error');
       }
-      setAuthError(err instanceof Error ? err.message : 'Unable to load Google Calendar.');
+      setAuthError(err instanceof Error ? err.message : 'Unable to load Zoho Calendar.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (googleToken) {
-      loadMeetings(currentFilter);
+    if (!authorizationResponse || authorizationHandled.current) return;
+    authorizationHandled.current = true;
+    if (!authorizationResponse.accessToken) {
+      setIsAuthorizing(false);
+      setConnectionState('error');
       return;
     }
 
     setIsAuthorizing(true);
     setConnectionState('connecting');
-    googleAuthService.requestCalendarAccess()
+    zohoAuthService.completeAuthorization(authorizationResponse)
       .then(result => {
-        setGoogleToken(result.accessToken);
+        setZohoToken(result.accessToken);
+        setZohoLocation(result.location);
         setOwnerName(result.profile.name);
         setOwnerEmail(result.profile.email);
         setConnectionState('connected');
       })
       .catch(err => {
         setConnectionState('error');
-        setAuthError(err instanceof Error ? err.message : 'Google Calendar authorization failed.');
+        setAuthError(err instanceof Error ? err.message : 'Zoho Calendar authorization failed.');
       })
       .finally(() => setIsAuthorizing(false));
-  }, [currentFilter, googleToken]);
+  }, [authorizationResponse]);
+
+  useEffect(() => {
+    if (zohoToken) loadMeetings(currentFilter);
+  }, [currentFilter, zohoToken, zohoLocation]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────
   const filteredMeetings = useMemo(() => {
@@ -191,44 +250,16 @@ export const App: React.FC = () => {
     onOpenCVModal: (meeting: Meeting) => { setSelectedMeetingForCV(meeting); setCvModalOpen(true); }
   };
 
-  if (isAuthorizing || (!googleToken && !authError)) {
-    return <CalendarAccessGate darkMode={darkMode} isConnecting={isAuthorizing} onToggleTheme={handleThemeToggle} onRetry={() => {
-      setAuthError('');
-      setIsAuthorizing(true);
-      setConnectionState('connecting');
-      googleAuthService.requestCalendarAccess()
-        .then(result => {
-          setGoogleToken(result.accessToken);
-          setOwnerName(result.profile.name);
-          setOwnerEmail(result.profile.email);
-          setConnectionState('connected');
-        })
-        .catch(err => {
-          setConnectionState('error');
-          setAuthError(err instanceof Error ? err.message : 'Google Calendar authorization failed.');
-        })
-        .finally(() => setIsAuthorizing(false));
-    }} />;
-  }
-
-  if (authError && !googleToken) {
-    return <CalendarAccessGate darkMode={darkMode} isConnecting={isAuthorizing} error={authError} onToggleTheme={handleThemeToggle} onRetry={() => {
-      setAuthError('');
-      setIsAuthorizing(true);
-      setConnectionState('connecting');
-      googleAuthService.requestCalendarAccess()
-        .then(result => {
-          setGoogleToken(result.accessToken);
-          setOwnerName(result.profile.name);
-          setOwnerEmail(result.profile.email);
-          setConnectionState('connected');
-        })
-        .catch(err => {
-          setConnectionState('error');
-          setAuthError(err instanceof Error ? err.message : 'Google Calendar authorization failed.');
-        })
-        .finally(() => setIsAuthorizing(false));
-    }} />;
+  if (isAuthorizing || !zohoToken) {
+    return (
+      <CalendarAccessGate
+        darkMode={darkMode}
+        isConnecting={isAuthorizing}
+        error={authError}
+        onToggleTheme={handleThemeToggle}
+        onRetry={handleZohoConnect}
+      />
+    );
   }
 
   return (
@@ -245,12 +276,14 @@ export const App: React.FC = () => {
               <DateFilterBar currentFilter={currentFilter} onFilterChange={setCurrentFilter} isLoading={isLoading} onRefresh={() => loadMeetings(currentFilter, true)} />
             </div>
 
-            {isAuthorizing || (!googleToken && !authError) ? (
-              <div className="mt-5 rounded-[22px] border border-white/70 bg-white/80 py-20 text-center shadow-[0_12px_34px_rgba(89,117,95,0.10)]"><p className="text-sm font-semibold text-[#2c4735]">Connecting Google Calendar...</p><p className="mt-1 text-xs text-[#728078]">Calendar access is required to load your meetings.</p></div>
-            ) : authError && !googleToken ? (
-              <div className="mt-5 rounded-[22px] border border-[#f0caca] bg-[#fff7f7] p-8 text-center"><h2 className="text-base font-bold text-[#763b3b]">Google Calendar access required</h2><p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-[#996363]">{authError}</p><button type="button" onClick={() => { setAuthError(''); setIsAuthorizing(true); setConnectionState('connecting'); googleAuthService.requestCalendarAccess().then(result => { setGoogleToken(result.accessToken); setOwnerName(result.profile.name); setOwnerEmail(result.profile.email); setConnectionState('connected'); }).catch(err => { setConnectionState('error'); setAuthError(err instanceof Error ? err.message : 'Authorization failed.'); }).finally(() => setIsAuthorizing(false)); }} className="mt-4 rounded-xl bg-[#4ba556] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#3f9149]">Connect Google Calendar</button></div>
-            ) : isLoading ? (
-              <div className="mt-5"><MeetingListSkeleton /></div>
+            {authError && (
+              <p role="status" className="mt-4 rounded-xl border border-[#efddbb] bg-[#fff9ed] px-4 py-3 text-xs text-[#85622b]">
+                {authError}
+              </p>
+            )}
+
+            {isLoading ? (
+              <div className="mt-5"><MeetingListSkeleton darkMode={darkMode} /></div>
             ) : (
               <>
                 <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">

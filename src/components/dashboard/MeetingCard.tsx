@@ -9,13 +9,12 @@ import {
   ChevronUp, 
   Sparkles, 
   Download, 
-  CloudUpload, 
   CheckCircle2, 
   AlertCircle,
   ExternalLink,
   Award
 } from 'lucide-react';
-import { Meeting } from '../../types/meeting';
+import { isMeetingCompleted, Meeting } from '../../types/meeting';
 import { GlassCard } from '../aura/GlassCard';
 
 interface MeetingCardProps {
@@ -44,7 +43,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
 
   return (
     <GlassCard glow="none" className="meeting-card p-4 sm:p-5 md:p-6 mb-4 overflow-hidden group">
-      {/* Top Banner Row: Time, Category & Drive Sync Badge */}
+      {/* Top Banner Row: Time and Category */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           {/* Time & Duration Pill */}
@@ -65,16 +64,9 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           </span>
         </div>
 
-        {/* Sync Status Badge */}
-        {meeting.syncedToDrive && (
-          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
-            <CloudUpload className="w-3 h-3" />
-            Drive Synced ({meeting.lastDriveSync || 'Updated'})
-          </span>
-        )}
       </div>
 
-      {/* Main Title & Meet Link */}
+      {/* Main Title and meeting link */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-4">
         <div className="flex-1">
           <h3 
@@ -89,15 +81,15 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         </div>
 
         {/* Join Video Call Button */}
-        {meeting.meetLink && !meeting.isCompleted && meeting.status !== 'cancelled' && (
+        {meeting.meetingLink && !isMeetingCompleted(meeting) && meeting.status !== 'cancelled' && (
           <a
-            href={meeting.meetLink}
+            href={meeting.meetingLink}
             target="_blank"
             rel="noopener noreferrer"
             className="self-start px-3.5 py-2 rounded-xl text-xs font-medium bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1.5 shrink-0"
           >
             <Video className="w-3.5 h-3.5" />
-            <span>Join Meet</span>
+            <span>Join meeting</span>
             <ExternalLink className="w-3 h-3 opacity-60" />
           </a>
         )}

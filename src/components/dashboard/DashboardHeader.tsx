@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarDays, Cloud, Moon, RefreshCw, Sun } from 'lucide-react';
+import { CalendarDays, Cloud, Moon, RefreshCw, Sparkles, Sun } from 'lucide-react';
 
 interface DashboardHeaderProps {
   ownerName: string;
@@ -16,7 +16,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ ownerName, isL
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6b8c76]">Calendar overview</p>
       <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17211b] sm:text-[30px]">
-        {getGreeting()}, {ownerName || 'there'} <span aria-hidden="true">&#128075;</span>
+        {getGreeting()}, {ownerName || 'there'}{' '}
+        <span className="ml-1 inline-flex h-7 w-7 translate-y-0.5 items-center justify-center rounded-full border border-[#d5e8d7] bg-gradient-to-br from-white to-[#eaf6eb] align-middle text-[#3d914b] shadow-[0_3px_10px_rgba(75,165,86,0.12)] sm:h-8 sm:w-8">
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+        </span>
       </h1>
       <p className="mt-1 text-sm text-[#718078]">Here is your calendar overview and closer insights.</p>
     </div>
@@ -27,7 +30,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ ownerName, isL
           <Cloud className="h-4 w-4" />
         </span>
         <span>
-          <span className="block text-xs font-bold text-[#26352c]">Google Calendar</span>
+          <span className="block text-xs font-bold text-[#26352c]">Zoho Calendar</span>
           <span className={`block text-[10px] font-semibold ${connectionState === 'connected' ? 'text-[#43a158]' : connectionState === 'error' ? 'text-[#c56b63]' : 'text-[#b18432]'}`}>
             {connectionState === 'connected' ? 'Connected' : connectionState === 'error' ? 'Not connected' : 'Connecting...'}
           </span>

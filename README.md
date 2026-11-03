@@ -1,113 +1,99 @@
 <h1 align="center">📅 Nexus Meeting Intelligence</h1>
 
 <h3 align="center">
-Google Calendar Meeting Dashboard • Attendee Insights • CV / JD Detection • PDF & CSV Export
+Zoho Calendar Meeting Dashboard • Attendee Insights • CV / JD Detection • PDF & CSV Export
 </h3>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Google_Calendar-Read--only-4285F4?style=for-the-badge&logo=googlecalendar&logoColor=white" alt="Google Calendar read-only" />
+  <img src="https://img.shields.io/badge/Zoho_Calendar-Read--only-E42527?style=for-the-badge&logo=zoho&logoColor=white" alt="Zoho Calendar read-only" />
   <img src="https://img.shields.io/badge/Export-PDF_%2B_CSV-EA4335?style=for-the-badge" alt="PDF and CSV export" />
 </p>
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**Nexus Meeting Intelligence** is a browser-based dashboard for viewing and organizing events from Google Calendar. It brings meeting schedules, attendee responses, event descriptions, and possible CV / job-description attachments into one searchable view.
+**Nexus Meeting Intelligence** is a browser-based dashboard for viewing events from Zoho Calendar. It brings schedules, attendee responses, event descriptions, meeting links, and available CV / job-description attachment details into one searchable view.
 
-The app connects directly to Google Calendar using read-only access. It does not create, edit, or delete calendar events. Export reports as PDF or CSV, or create a read-only link to share the currently selected events.
+The app uses Zoho OAuth with read-only calendar permissions. It does not create, edit, or delete calendar events. Export reports as PDF or CSV, or create a read-only link to share selected events.
 
----
+## Features
 
-## ✨ Features
+### Zoho Calendar dashboard
 
-### 📆 Calendar Dashboard
-
-- Connect a Google account through Google Identity Services
-- View calendar events for today, yesterday, the last seven days, or a custom date range
-- See scheduled time, duration, status, agenda, meeting link, and attendees
-- Review attendee RSVP status and event descriptions
-- See completed-time, upcoming-event, and CV / JD summary metrics
+- Connect a Zoho account using OAuth 2.0
+- View events across accessible Zoho calendars
+- Filter events by today, yesterday, the last seven days, or a custom date range
+- Review scheduled time, duration, status, description, attendees, and RSVP responses
+- Open meeting links included in calendar events
+- Search and filter meetings, interviews, leads, and CV / JD references
 - Switch between light and dark themes
 
-### 🔎 Meeting Search & Organization
+### CV / JD indicators
 
-- Search by meeting title, agenda, attendee name, email, or detected candidate name
-- Filter events by all events, CV / JD, interviews, or leads
-- Browse results with pagination
-- Expand a meeting card for calendar notes and any available action items
-- Open a full brief with the event description, attendees, and meeting links
+- Identify possible CV or job-description events from calendar descriptions and attachment metadata
+- View attachment and candidate details provided by the calendar event
 
-### 📄 CV / JD Indicators
+> Detection is based on calendar event text and available attachment metadata; it is not AI resume analysis.
 
-- Flag events when Google Calendar includes a matching attachment or the event text contains CV / resume / job-description keywords
-- View available attachment and candidate details in the dashboard
+### Export and sharing
 
-> CV / JD identification is based on calendar event and attachment text; it is not an AI resume analysis.
+- Download selected events as PDF or CSV
+- Generate read-only share links for filtered events
+- Open shared events in a separate read-only view
 
-### 📤 Export & Share
+## Attendance data
 
-- Download the selected events as a PDF report
-- Download event details as a CSV file for spreadsheet apps
-- Generate a read-only share link for the currently filtered events
-- Open shared events in a separate read-only view without signing in
+Zoho Calendar provides scheduled events, not participant attendance records. The dashboard does not infer actual attendance from a scheduled event's duration; actual attended time is shown as unavailable.
 
----
+## Workflow
 
-## 🔄 Workflow
+1. Connect a Zoho account and grant read-only Calendar access.
+2. Select a date range to load accessible calendar events.
+3. Search or filter events to find meetings, interviews, leads, or CV / JD references.
+4. Open a meeting card or brief to review calendar-provided details.
+5. Export visible events or create a read-only share link.
 
-1. Connect a Google account and grant read-only Calendar access.
-2. Choose a date range to load matching events.
-3. Search or filter the list to find meetings, interviews, leads, or CV / JD events.
-4. Open a meeting card or full brief to review calendar-provided details.
-5. Export the visible events as PDF / CSV or generate a read-only share link.
-
----
-
-## 🧰 Tech Stack
+## Tech stack
 
 - **UI:** React 19, TypeScript, Tailwind CSS
 - **Build tooling:** Vite
-- **Calendar integration:** Google Identity Services and Google Calendar API
+- **Calendar integration:** Zoho Calendar REST API and OAuth 2.0
 - **Reports:** jsPDF and browser-generated CSV
 - **Share links:** Compressed URL-fragment payloads with fflate
 - **Icons:** Lucide React
 
----
-
-## 📂 Project Structure
+## Project structure
 
 ```text
 src/
 ├── components/
-│   ├── auth/          # Google Calendar access gate
+│   ├── auth/          # Zoho Calendar access gate
 │   ├── controls/      # Date filters, date picker, and search
-│   ├── dashboard/    # Schedule, insights, meeting cards, and briefs
-│   ├── export/       # PDF / CSV export and share dialog
-│   └── shared/       # Read-only shared-event view
+│   ├── dashboard/     # Schedule, insights, meeting cards, and briefs
+│   ├── export/        # PDF / CSV export and share dialog
+│   └── shared/        # Read-only shared-event view
 ├── services/
-│   ├── googleAuth.ts      # Google sign-in and token handling
-│   ├── googleCalendar.ts  # Calendar event loading and transformation
-│   ├── calendarCache.ts   # Per-session event cache
-│   └── pdfGenerator.ts    # Local PDF and CSV generation
+│   ├── zohoAuth.ts       # Zoho OAuth and session handling
+│   ├── zohoCalendar.ts   # Calendar loading and event transformation
+│   ├── calendarCache.ts  # Per-session event cache
+│   └── pdfGenerator.ts   # Local PDF and CSV generation
 ├── types/             # Meeting and share-link types/utilities
 ├── App.tsx
 └── index.css
 ```
 
----
-
-## ⚙️ Getting Started
+## Getting started
 
 ### Requirements
 
 - Node.js 20 or newer
 - npm
-- A Google Cloud project with the Google Calendar API enabled
-- A Google OAuth web client ID
+- A Zoho API Console **JavaScript** client
+- Read access to the user's Zoho Calendar
 
 ### Install and run
 
@@ -116,40 +102,37 @@ npm install
 npm run dev
 ```
 
-### Configure Google Calendar
+### Configure Zoho Calendar
 
-Create a **Web application** OAuth client in Google Cloud Console. Enable the Google Calendar API, add your local app origin (usually `http://localhost:5173`) to **Authorized JavaScript origins**, and create a `.env` file in the project root:
+Create a **JavaScript** client in the [Zoho API Console](https://api-console.zoho.com/). Register the exact redirect URI used by the app (usually `http://localhost:5173/`), then create a `.env` file in the project root:
 
 ```env
-VITE_GOOGLE_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+VITE_ZOHO_CLIENT_ID=your-zoho-client-id
+VITE_ZOHO_ACCOUNTS_URL=https://accounts.zoho.com
+VITE_ZOHO_CALENDAR_API_URL=https://calendar.zoho.com/api/v1
+VITE_ZOHO_REDIRECT_URI=http://localhost:5173/
 ```
 
-Restart the Vite development server after changing environment variables.
+Set the Accounts and Calendar API URLs for the Zoho data center where the account and OAuth client are registered. For example, Zoho India uses `https://accounts.zoho.in` and `https://calendar.zoho.in/api/v1`. The redirect URI in Zoho must match `VITE_ZOHO_REDIRECT_URI` exactly. Restart Vite after changing environment variables.
 
-The app requests the `calendar.readonly` scope along with basic profile information. For local OAuth testing, add the Google account under **Google Auth Platform → Audience → Test users** while the consent screen is in Testing mode.
+The app requests `AaaServer.profile.READ`, `ZohoCalendar.calendar.READ`, and `ZohoCalendar.event.READ`. It uses Zoho's browser OAuth flow; **do not put a client secret in frontend environment variables**. Zoho access tokens expire after one hour, so reconnect when prompted. App session data and its calendar cache are cleared on token expiry or after 48 hours, whichever comes first.
 
----
+## Privacy and access
 
-## 🔐 Privacy & Access
+- Calendar permissions are read-only; Nexus cannot change calendar events.
+- The temporary Zoho access token and event cache are kept in browser `sessionStorage`.
+- This app reads calendar data only. It does not read Zoho Mail; Mail has a separate API and is not required for this dashboard.
+- PDF and CSV files are generated and downloaded in the browser; reports are not uploaded to a server.
+- Share links contain compressed event data in the URL fragment. Anyone with the link can view that data; it is encoded for transport, not encrypted. Share only with intended recipients.
 
-- Calendar permissions are read-only; the app cannot change calendar events.
-- The temporary Google access token and event cache are kept in browser `sessionStorage`.
-- PDF and CSV files are generated and downloaded in the browser; this app does not upload those reports to a server or Google Drive.
-- Share links contain compressed event data in the URL fragment. Anyone with the link can view that data, so only share it with intended recipients. The payload is encoded for transport, not encrypted.
-- Avoid sharing links that include sensitive event details.
-
----
-
-## 🏗️ Build
+## Build
 
 ```bash
 npm run build
 npm run preview
 ```
 
----
-
-## 👨‍💻 Author
+## Author
 
 **Muzamil Saleem**  
 Associate Software Engineer • Full Stack Developer • Data Engineer

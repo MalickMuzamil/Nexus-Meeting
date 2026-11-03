@@ -161,7 +161,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           </div>
           <p className="mt-2 text-[11px] text-[#839087]">
             {fileFormat === 'csv'
-              ? '💡 CSV opens directly in Microsoft Excel or Google Sheets'
+              ? '💡 CSV opens in Microsoft Excel and other spreadsheet apps'
               : '💡 PDF is formatted for printing and sharing as attachments'}
           </p>
         </div>

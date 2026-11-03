@@ -134,14 +134,14 @@ export const SharedViewPage: React.FC<SharedViewProps> = ({ meetings, ownerName 
                     {/* Title */}
                     <td className="px-4 py-3 min-w-[200px]">
                       <div className="font-semibold text-white leading-tight">{m.title}</div>
-                      {m.meetLink && (
+                      {m.meetingLink && (
                         <a
-                          href={m.meetLink}
+                          href={m.meetingLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[10px] text-cyan-400 flex items-center gap-0.5 mt-0.5 hover:underline"
                         >
-                          <Video className="w-2.5 h-2.5" /> Join Meet
+                          <Video className="w-2.5 h-2.5" /> Join meeting
                         </a>
                       )}
                     </td>
@@ -249,4 +249,3 @@ export const SharedViewPage: React.FC<SharedViewProps> = ({ meetings, ownerName 
     </div>
   );
 };
-

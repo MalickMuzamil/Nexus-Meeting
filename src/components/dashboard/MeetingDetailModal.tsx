@@ -56,17 +56,17 @@ export const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({
         </div>
 
         {/* Quick Links & Join Row */}
-        {(meeting.meetLink || meeting.hasCV) && (
+        {(meeting.meetingLink || meeting.hasCV) && (
           <div className="flex flex-wrap items-center gap-3 mb-6 p-3.5 rounded-2xl bg-white/[0.02] border border-white/10">
-            {meeting.meetLink && (
+            {meeting.meetingLink && (
               <a
-                href={meeting.meetLink}
+                href={meeting.meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 transition-all"
               >
                 <Video className="w-4 h-4" />
-                <span>Launch Google Meet</span>
+                <span>Open meeting link</span>
                 <ExternalLink className="w-3 h-3 opacity-70" />
               </a>
             )}
