@@ -37,8 +37,8 @@ export const CVViewerModal: React.FC<CVViewerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-2xl rounded-3xl border border-purple-500/30 bg-slate-900/95 backdrop-blur-2xl p-6 md:p-8 shadow-[0_20px_60px_rgba(168,85,247,0.2)] overflow-hidden">
+    <div className="cv-viewer-modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
+      <div className="cv-viewer-surface relative w-full max-w-2xl rounded-3xl border border-purple-500/30 bg-slate-900/95 backdrop-blur-2xl p-6 md:p-8 shadow-[0_20px_60px_rgba(168,85,247,0.2)] overflow-hidden">
         {/* Top Purple Accent line */}
         <div className="absolute inset-x-0 -top-px h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500" />
 
@@ -153,4 +153,3 @@ export const CVViewerModal: React.FC<CVViewerModalProps> = ({
     </div>
   );
 };
-

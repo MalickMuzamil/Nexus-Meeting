@@ -101,10 +101,10 @@
 }
 
 .glass-skeleton-dark {
-  border-color: rgba(99, 132, 105, 0.3);
-  background: linear-gradient(115deg, rgba(32, 54, 37, 0.72), rgba(58, 83, 62, 0.58), rgba(32, 54, 37, 0.72));
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
   background-size: 220% 100%;
-  box-shadow: inset 0 1px 0 rgba(184, 218, 187, 0.08), 0 3px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 3px 12px rgba(0, 0, 0, 0.18);
 }
 
 @keyframes glass-skeleton-shimmer {
@@ -954,4 +954,275 @@
 
 .shared-view-light [class*="bg-amber-500"] {
   background-color: #fff7e6 !important;
+}
+
+/* Dark theme palette: black glass surfaces with the existing green accent. */
+.dashboard-dark {
+  --dark-base: #070b14;
+  --dark-glass: rgba(255, 255, 255, 0.03);
+  --dark-glass-hover: rgba(255, 255, 255, 0.06);
+  --dark-border: rgba(255, 255, 255, 0.08);
+  --dark-border-highlight: rgba(255, 255, 255, 0.15);
+  --dark-text-primary: #f8fafc;
+  --dark-text-secondary: #94a3b8;
+  --dark-green: #22c55e;
+  --dark-green-soft: rgba(34, 197, 94, 0.15);
+  background: var(--dark-base) !important;
+  background-image: radial-gradient(
+    ellipse 78% 70% at 50% 50%,
+    rgba(30, 41, 59, 0.76) 0%,
+    rgba(20, 30, 47, 0.48) 42%,
+    rgba(12, 19, 32, 0.18) 72%,
+    transparent 100%
+  ) !important;
+  background-size: 100% 100vh;
+  background-position: center top;
+  background-repeat: no-repeat;
+  color: var(--dark-text-primary) !important;
+}
+
+.dashboard-dark .meeting-data-section {
+  padding: 1.25rem;
+  border: 1px solid var(--dark-border) !important;
+  border-radius: 24px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0.018)
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 16px 40px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+@media (max-width: 640px) {
+  .dashboard-dark .meeting-data-section {
+    padding: 1rem;
+  }
+}
+
+.dashboard-dark aside,
+.dashboard-dark section,
+.dashboard-dark .meeting-card,
+.dashboard-dark [class*="rounded-2xl"][class*="border"],
+.dashboard-dark [class*="rounded-[22px]"][class*="border"] {
+  background-color: var(--dark-glass) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.dashboard-dark [class*="bg-[#f3f6f3"],
+.dashboard-dark [class*="bg-[#9fbea9"],
+.dashboard-dark [class*="bg-white"],
+.dashboard-dark [class*="bg-[#f7faf6"],
+.dashboard-dark [class*="bg-[#f5f8f4"],
+.dashboard-dark [class*="bg-[#edf5ed"],
+.dashboard-dark [class*="bg-[#edf8"],
+.dashboard-dark [class*="bg-[#eef8"],
+.dashboard-dark [class*="bg-[#eff8"],
+.dashboard-dark [class*="bg-[#dff2"],
+.dashboard-dark [class*="bg-[#eaf"],
+.dashboard-dark [class*="bg-[#f0"],
+.dashboard-dark [class*="bg-[#fff"] {
+  background-color: var(--dark-glass) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dashboard-dark [class*="text-[#17211b"],
+.dashboard-dark [class*="text-[#173c2b"],
+.dashboard-dark [class*="text-[#1b251e"],
+.dashboard-dark [class*="text-[#1b2b20"],
+.dashboard-dark [class*="text-[#236c37"],
+.dashboard-dark [class*="text-[#244b33"],
+.dashboard-dark [class*="text-[#26342b"],
+.dashboard-dark [class*="text-[#26352c"],
+.dashboard-dark [class*="text-[#27332b"],
+.dashboard-dark [class*="text-[#27342c"],
+.dashboard-dark [class*="text-[#304239"],
+.dashboard-dark [class*="text-[#52645a"],
+.dashboard-dark [class*="text-white"],
+.dashboard-dark [class*="text-slate-100"],
+.dashboard-dark [class*="text-slate-200"],
+.dashboard-dark [class*="text-slate-300"] {
+  color: var(--dark-text-primary) !important;
+}
+
+.dashboard-dark [class*="text-[#6"],
+.dashboard-dark [class*="text-[#7"],
+.dashboard-dark [class*="text-[#8"],
+.dashboard-dark [class*="text-[#9"],
+.dashboard-dark [class*="text-slate-400"],
+.dashboard-dark [class*="text-slate-500"],
+.dashboard-dark [class*="text-slate-600"] {
+  color: var(--dark-text-secondary) !important;
+}
+
+.dashboard-dark [class*="text-[#3d914b"],
+.dashboard-dark [class*="text-[#3f9c51"],
+.dashboard-dark [class*="text-[#378b47"],
+.dashboard-dark [class*="text-[#3a9952"],
+.dashboard-dark [class*="text-[#4ba556"],
+.dashboard-dark [class*="text-[#4c"],
+.dashboard-dark [class*="text-emerald-"],
+.dashboard-dark [class*="text-cyan-"],
+.dashboard-dark [class*="text-green-"] {
+  color: #4ade80 !important;
+}
+
+.dashboard-dark [class*="border-[#"],
+.dashboard-dark [class*="border-white"] {
+  border-color: var(--dark-border) !important;
+}
+
+.dashboard-dark .meeting-data-section > div:first-child p {
+  color: var(--dark-text-secondary) !important;
+}
+
+.dashboard-dark .meeting-data-section > div:first-child h2 {
+  color: var(--dark-text-primary) !important;
+}
+
+.dashboard-dark [class*="bg-[#4ba556"],
+.dashboard-dark [class*="bg-[#3f9149"],
+.dashboard-dark [class*="bg-[#3d914b"],
+.dashboard-dark button[class*="bg-[#4ba556"],
+.dashboard-dark button[class*="bg-[#3f9149"] {
+  background-color: var(--dark-green) !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  color: #07110a !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2) !important;
+}
+
+.dashboard-dark button:not([disabled]):hover,
+.dashboard-dark a[class*="rounded"]:hover {
+  border-color: var(--dark-border-highlight) !important;
+}
+
+.dashboard-dark input,
+.dashboard-dark select,
+.dashboard-dark textarea {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+  border-color: var(--dark-border) !important;
+  color: var(--dark-text-primary) !important;
+}
+
+.dashboard-dark input::placeholder,
+.dashboard-dark textarea::placeholder {
+  color: var(--dark-text-secondary) !important;
+}
+
+.dashboard-dark .meeting-detail-modal-dark {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface,
+.dashboard-export-modal-dark .export-surface,
+.dashboard-dark .cv-viewer-surface {
+  background-color: rgba(7, 11, 20, 0.78) !important;
+  background-image:
+    radial-gradient(circle at 90% 0%, rgba(34, 197, 94, 0.12), transparent 38%),
+    linear-gradient(rgba(7, 11, 20, 0.74), rgba(7, 11, 20, 0.88)) !important;
+  border-color: var(--dark-border) !important;
+  color: var(--dark-text-primary) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface [class*="bg-"],
+.dashboard-export-modal-dark .export-surface [class*="bg-"],
+.dashboard-dark .cv-viewer-surface [class*="bg-"] {
+  background-color: var(--dark-glass) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface [class*="bg-gradient"],
+.dashboard-dark .cv-viewer-surface [class*="bg-gradient"] {
+  background-image: none !important;
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface button[class*="bg-[#edf8ee"],
+.dashboard-export-modal-dark .export-surface button[class*="bg-[#4ba556"],
+.dashboard-dark .cv-viewer-surface button[class*="bg-gradient"] {
+  background: var(--dark-green) !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  color: #07110a !important;
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface [class*="text-"],
+.dashboard-export-modal-dark .export-surface [class*="text-"],
+.dashboard-dark .cv-viewer-surface [class*="text-"] {
+  color: var(--dark-text-primary);
+}
+
+.meeting-detail-modal-dark .meeting-detail-surface [class*="text-slate-400"],
+.dashboard-export-modal-dark .export-surface [class*="text-[#7"],
+.dashboard-dark .cv-viewer-surface [class*="text-slate-400"] {
+  color: var(--dark-text-secondary) !important;
+}
+
+.shared-view-dark {
+  background: #070b14 !important;
+  background-image:
+    radial-gradient(circle at 30% -10%, rgba(34, 197, 94, 0.15) 0%, transparent 36%),
+    radial-gradient(circle at 90% 100%, rgba(56, 189, 248, 0.07) 0%, transparent 38%),
+    radial-gradient(circle at 0% 50%, rgba(34, 197, 94, 0.08) 0%, transparent 32%) !important;
+  background-attachment: fixed;
+  color: #f8fafc !important;
+}
+
+.shared-view-dark .shared-ambient {
+  display: none !important;
+}
+
+.shared-view-dark header {
+  background: rgba(7, 11, 20, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.shared-view-dark .shared-card,
+.shared-view-dark .shared-table-head {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.shared-view-dark .shared-logo,
+.shared-view-dark .shared-badge,
+.shared-view-dark button,
+.shared-view-dark [class*="bg-amber-500"] {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.24) !important;
+}
+
+.shared-view-dark [class*="text-cyan-"],
+.shared-view-dark [class*="text-indigo-"],
+.shared-view-dark [class*="text-purple-"],
+.shared-view-dark [class*="text-emerald-"],
+.shared-view-dark [class*="text-amber-"] {
+  color: #4ade80 !important;
+}
+
+.shared-view-dark [class*="text-white"],
+.shared-view-dark [class*="text-slate-100"],
+.shared-view-dark [class*="text-slate-200"],
+.shared-view-dark [class*="text-slate-300"] {
+  color: #f8fafc !important;
+}
+
+.shared-view-dark [class*="text-slate-400"],
+.shared-view-dark [class*="text-slate-500"],
+.shared-view-dark [class*="text-slate-600"] {
+  color: #94a3b8 !important;
+}
+
+.shared-view-dark [class*="border-white"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
