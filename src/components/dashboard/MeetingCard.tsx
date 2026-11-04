@@ -158,7 +158,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-3 animate-fadeIn">
           {/* Notes */}
           <div>
-            <h4 className="text-xs font-semibold text-cyan-300 mb-1.5">Meeting Notes & Key Takeaways:</h4>
+            <h4 className="text-xs font-semibold text-cyan-300 mb-1.5">Meeting Notes & Attendee Comments:</h4>
             <ul className="space-y-1">
               {meeting.notes.map((note, idx) => (
                 <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
@@ -211,7 +211,7 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
           ) : (
             <>
               <ChevronDown className="w-3.5 h-3.5" />
-              <span>Notes & attendees ({meeting.notes.length})</span>
+              <span>Notes & attendee comments ({meeting.notes.length})</span>
             </>
           )}
         </button>

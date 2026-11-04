@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, Calendar as CalendarIcon, Sparkles, Filter, RefreshCw } from 'lucide-react';
-import { DateFilter } from '../../types/meeting';
+import { getLocalDateString, type DateFilter } from '../../types/meeting';
 import { DatePicker } from './DatePicker';
 
 interface DateFilterBarProps {
@@ -20,18 +20,18 @@ export const DateFilterBar: React.FC<DateFilterBarProps> = ({
   const [customStart, setCustomStart] = useState(currentFilter.startDate);
   const [customEnd, setCustomEnd] = useState(currentFilter.endDate);
 
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const getTodayStr = () => getLocalDateString();
 
   const getYesterdayStr = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   };
 
   const getWeekStartStr = () => {
     const d = new Date();
     d.setDate(d.getDate() - 6);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   };
 
   const getMonthRange = (offset: number) => {
@@ -39,7 +39,7 @@ export const DateFilterBar: React.FC<DateFilterBarProps> = ({
     date.setMonth(date.getMonth() + offset, 1);
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
     const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+    return { start: getLocalDateString(start), end: getLocalDateString(end) };
   };
 
   const updateFilter = (nextFilter: DateFilter) => {

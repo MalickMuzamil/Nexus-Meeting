@@ -2,6 +2,7 @@ export interface Attendee {
   name: string;
   email: string;
   avatar?: string;
+  note?: string;
   status: 'accepted' | 'declined' | 'tentative' | 'needsAction';
   role?: 'organizer' | 'interviewer' | 'candidate' | 'client' | 'participant';
 }
@@ -45,6 +46,24 @@ export interface Meeting {
 
 export const isMeetingCompleted = (meeting: Meeting, now = Date.now()): boolean =>
   meeting.endTimestamp !== undefined ? meeting.endTimestamp <= now : meeting.isCompleted;
+
+export const getLocalDateString = (date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const getUpcomingMeetingsForToday = (meetings: Meeting[], now = Date.now()): Meeting[] => {
+  const today = getLocalDateString(new Date(now));
+  return meetings.filter(meeting =>
+    meeting.date === today &&
+    meeting.status !== 'cancelled' &&
+    (meeting.startTimestamp !== undefined
+      ? meeting.startTimestamp > now
+      : !isMeetingCompleted(meeting, now))
+  );
+};
 
 export const getAttendedMinutes = (meeting: Meeting): number =>
   meeting.attendedMinutes ?? 0;

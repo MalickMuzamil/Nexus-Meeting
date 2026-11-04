@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CalendarDays, CheckCircle2, Clock3, FileText, Users } from 'lucide-react';
-import { isMeetingCompleted, type Meeting } from '../../types/meeting';
+import { getLocalDateString, getUpcomingMeetingsForToday, isMeetingCompleted, type Meeting } from '../../types/meeting';
 
 interface DashboardInsightsProps {
   meetings: Meeting[];
@@ -13,11 +13,22 @@ export const DashboardInsights: React.FC<DashboardInsightsProps> = ({ meetings }
     return () => window.clearInterval(intervalId);
   }, []);
 
+  const today = getLocalDateString(new Date(now));
+  const todaysEvents = meetings.filter(meeting =>
+    meeting.date === today && meeting.status !== 'cancelled'
+  );
+  const completedToday = todaysEvents.filter(meeting =>
+    isMeetingCompleted(meeting, now) && meeting.status !== 'cancelled'
+  );
   const pastEvents = meetings.filter(meeting =>
     isMeetingCompleted(meeting, now) && meeting.status !== 'cancelled'
   );
-  const upcoming = meetings.filter(meeting => !isMeetingCompleted(meeting, now) && meeting.status !== 'cancelled');
+  const upcomingToday = getUpcomingMeetingsForToday(meetings, now);
+  const upcoming = meetings.filter(meeting =>
+    !isMeetingCompleted(meeting, now) && meeting.status !== 'cancelled'
+  );
   const cvCount = meetings.filter(meeting => meeting.hasCV).length;
+  const todaysCVCount = todaysEvents.filter(meeting => meeting.hasCV).length;
   const dayCounts = meetings.reduce<Record<string, number>>((counts, meeting) => {
     const day = new Date(`${meeting.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
     counts[day] = (counts[day] || 0) + 1;
@@ -49,13 +60,13 @@ export const DashboardInsights: React.FC<DashboardInsightsProps> = ({ meetings }
       <section className="rounded-[22px] border border-white/70 bg-white/80 p-5 shadow-[0_12px_34px_rgba(89,117,95,0.10)]">
         <div className="flex items-start justify-between"><div><h2 className="text-lg font-bold text-[#1b251e]">Today&apos;s summary</h2><p className="mt-0.5 text-xs text-[#728078]">Live from your calendar</p></div><Clock3 className="h-5 w-5 text-[#e2a63b]" /></div>
         <div className="mt-4 divide-y divide-[#e7eee8]">
-          <SummaryRow icon={CalendarDays} label="Events" value={String(meetings.length)} />
-          <SummaryRow icon={Clock3} label="Actual attended time" value="Unavailable" />
-          <SummaryRow icon={Users} label="Upcoming" value={String(upcoming.length)} />
-          <SummaryRow icon={FileText} label="CV / JD files" value={String(cvCount)} />
+          <SummaryRow icon={CalendarDays} label="Events today" value={String(todaysEvents.length)} />
+          <SummaryRow icon={Clock3} label="Completed today" value={String(completedToday.length)} />
+          <SummaryRow icon={Users} label="Upcoming today" value={String(upcomingToday.length)} />
+          <SummaryRow icon={FileText} label="CV / JD files today" value={String(todaysCVCount)} />
         </div>
         <p role="status" className="mt-3 text-xs leading-relaxed text-[#9b5b28]">
-          Zoho Calendar provides scheduled events, not attendance records. Scheduled duration is not counted as attended time.
+          Completed means the scheduled end time has passed; calendar data cannot confirm attendance or actual time spent.
         </p>
       </section>
 

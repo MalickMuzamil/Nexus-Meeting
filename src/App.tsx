@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { Meeting, DateFilter } from './types/meeting';
+import { getLocalDateString, type Meeting, type DateFilter } from './types/meeting';
 import { parseShareTokenFromURL, decodeSharePayloadFromToken } from './types/shareUtils';
 import { zohoCalendarService } from './services/zohoCalendar';
 import {
@@ -55,7 +55,7 @@ export const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState(() => sessionStorage.getItem('nexus_theme') === 'dark');
 
   // ── Date Filter (defaults to today) ──────────────────────────────────────
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getLocalDateString(), []);
   const [currentFilter, setCurrentFilter] = useState<DateFilter>({
     type: 'today',
     startDate: todayStr,
@@ -319,6 +319,11 @@ export const App: React.FC = () => {
         onClose={() => setDetailModalOpen(false)}
         meeting={selectedMeetingForDetail}
         onOpenCVModal={m => { setSelectedMeetingForCV(m); setCvModalOpen(true); }}
+        onOpenExport={m => {
+          setSelectedMeetingForExport(m);
+          setDetailModalOpen(false);
+          setExportModalOpen(true);
+        }}
         darkMode={darkMode}
       />
 

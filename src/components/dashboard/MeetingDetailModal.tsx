@@ -1,26 +1,39 @@
 import React from 'react';
 import { 
+  AlertCircle,
+  CheckCircle2,
+  CircleHelp,
+  Share2,
   Video, 
   Users, 
   FileText, 
   ExternalLink,
   Sparkles
 } from 'lucide-react';
-import { Meeting } from '../../types/meeting';
+import type { Attendee, Meeting } from '../../types/meeting';
 
 interface MeetingDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   meeting: Meeting | null;
   onOpenCVModal: (meeting: Meeting) => void;
+  onOpenExport: (meeting: Meeting) => void;
   darkMode?: boolean;
 }
+
+const attendeeStatus: Record<Attendee['status'], { label: string; className: string; icon: typeof CheckCircle2 }> = {
+  accepted: { label: 'Accepted', className: 'border-[#c6e4c9] bg-[#edf8ee] text-[#378b47]', icon: CheckCircle2 },
+  needsAction: { label: 'Needs action', className: 'border-[#f0dfb8] bg-[#fff8e9] text-[#9b7128]', icon: AlertCircle },
+  declined: { label: 'Declined', className: 'border-[#efcaca] bg-[#fff0f0] text-[#ad4f4f]', icon: AlertCircle },
+  tentative: { label: 'Tentative', className: 'border-[#d5e0d7] bg-[#f3f6f3] text-[#718078]', icon: CircleHelp }
+};
 
 export const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({
   isOpen,
   onClose,
   meeting,
   onOpenCVModal,
+  onOpenExport,
   darkMode = false
 }) => {
   if (!isOpen || !meeting) return null;
@@ -111,24 +124,31 @@ export const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({
             Attendees ({meeting.attendees.length})
           </h4>
           {meeting.attendees.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {meeting.attendees.map((att, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between"
+                  className="flex min-w-0 flex-col items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex min-w-0 w-full flex-1 items-center gap-2.5 sm:w-auto">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/30 to-purple-500/30 border border-white/20 flex items-center justify-center font-bold text-xs text-white">
                       {att.name.charAt(0)}
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-white">{att.name}</p>
-                      <p className="text-[11px] text-slate-400">{att.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-xs font-bold text-white">{att.name}</p>
+                      <p className="break-all text-[11px] text-slate-400">{att.email}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full uppercase font-mono font-semibold bg-white/[0.05] text-slate-300 border border-white/10">
-                    {att.status}
-                  </span>
+                  {(() => {
+                    const status = attendeeStatus[att.status];
+                    const StatusIcon = status.icon;
+                    return (
+                      <span className={`inline-flex max-w-full shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold sm:self-auto ${status.className}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {status.label}
+                      </span>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -137,11 +157,11 @@ export const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({
           )}
         </div>
 
-        {/* Calendar-provided notes only */}
+        {/* Event description and attendee notes */}
         <div className="mb-6">
           <h4 className="text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            Calendar Notes
+            Meeting notes
           </h4>
 
           {meeting.notes.length > 0 ? (
@@ -157,15 +177,23 @@ export const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-slate-400">No notes provided in this calendar event.</p>
+            <p className="text-sm text-slate-400">No event or attendee notes were provided.</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end pt-4 border-t border-white/[0.08]">
+        <div className="flex justify-between gap-3 pt-4 border-t border-white/[0.08]">
+          <button
+            type="button"
+            onClick={() => onOpenExport(meeting)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#c6e4c9] bg-[#edf8ee] px-4 py-2 text-xs font-semibold text-[#378b47] transition hover:bg-[#dff2d7]"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Export / Share
+          </button>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all"
+            className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#edf8ee] hover:bg-[#dff2d7] text-[#26342b] transition-all"
           >
             Done
           </button>

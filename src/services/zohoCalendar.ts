@@ -9,8 +9,18 @@ type ZohoCalendar = {
 type ZohoAttendee = {
   email?: string;
   name?: string;
+  display_name?: string;
+  displayname?: string;
+  attendee_name?: string;
   status?: string;
   role?: string;
+  comment?: string;
+  comments?: string;
+  note?: string;
+  notes?: string;
+  response_comment?: string;
+  rsvp_comment?: string;
+  rm?: string;
 };
 
 type ZohoAttachment = {
@@ -45,6 +55,7 @@ type ZohoEvent = {
   repeat?: Array<{ freq?: string }>;
   organizer?: string | { email?: string; name?: string };
   attendees?: ZohoAttendee[];
+  group_attendees?: Record<string, ZohoAttendee[]>;
   attachments?: ZohoAttachment[];
   attachment?: ZohoAttachment[];
   dateandtime?: {
@@ -60,6 +71,13 @@ type ZohoApiError = {
   error?: string;
   code?: string | number;
 };
+
+class ZohoHttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = 'ZohoHttpError';
+  }
+}
 
 const isCalendarEvent = (event: ZohoEvent): boolean =>
   Boolean(
@@ -142,7 +160,7 @@ const requestJson = async <T>(
   if (!response.ok) {
     const apiError = payload as ZohoApiError | undefined;
     const message = apiError?.message || apiError?.error || apiError?.code || body.trim().slice(0, 240) || response.statusText;
-    throw new Error(`Zoho Calendar returned ${response.status}: ${message}.`);
+    throw new ZohoHttpError(response.status, `Zoho Calendar returned ${response.status}: ${message}.`);
   }
   if (payload === undefined) throw new Error('Zoho Calendar returned an empty response.');
   return payload as T;
@@ -212,6 +230,71 @@ const mapAttendeeStatus = (status = ''): Attendee['status'] => {
   }
 };
 
+const getAttendeeName = (attendee: ZohoAttendee): string => {
+  if (attendee.name || attendee.display_name || attendee.displayname || attendee.attendee_name) {
+    return attendee.name || attendee.display_name || attendee.displayname || attendee.attendee_name || '';
+  }
+  const localPart = attendee.email?.split('@')[0] || 'Attendee';
+  return localPart
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
+const getAttendeeNote = (attendee: ZohoAttendee): string | undefined => {
+  const note = attendee.comment ||
+    attendee.comments ||
+    attendee.note ||
+    attendee.notes ||
+    attendee.response_comment ||
+    attendee.rsvp_comment ||
+    attendee.rm;
+  return note?.trim() || undefined;
+};
+
+const getZohoAttendees = (event: ZohoEvent): Attendee[] => {
+  const organizer = typeof event.organizer === 'string'
+    ? { email: event.organizer }
+    : event.organizer;
+  const rawAttendees = [
+    ...Object.values(event.group_attendees || {}).flat(),
+    ...(event.attendees || [])
+  ];
+  const attendeesByEmail = new Map<string, Attendee>();
+
+  rawAttendees.forEach(attendee => {
+    if (!attendee.email) return;
+    const emailKey = attendee.email.toLowerCase();
+    const isOrganizer = attendee.role?.toLowerCase() === 'organizer' ||
+      attendee.email.toLowerCase() === organizer?.email?.toLowerCase();
+    const mappedAttendee: Attendee = {
+      name: getAttendeeName(attendee),
+      email: attendee.email,
+      note: getAttendeeNote(attendee),
+      status: mapAttendeeStatus(attendee.status),
+      role: isOrganizer ? 'organizer' : 'participant'
+    };
+    const currentAttendee = attendeesByEmail.get(emailKey);
+    if (!currentAttendee) {
+      attendeesByEmail.set(emailKey, mappedAttendee);
+    } else if (!currentAttendee.note && mappedAttendee.note) {
+      attendeesByEmail.set(emailKey, { ...currentAttendee, note: mappedAttendee.note });
+    }
+  });
+
+  if (organizer?.email && !attendeesByEmail.has(organizer.email.toLowerCase())) {
+    attendeesByEmail.set(organizer.email.toLowerCase(), {
+      name: organizer.name || getAttendeeName({ email: organizer.email }),
+      email: organizer.email,
+      status: 'accepted',
+      role: 'organizer'
+    });
+  }
+
+  return Array.from(attendeesByEmail.values());
+};
+
 const splitNotes = (description = '') => description
   .split(/\r?\n+/)
   .map(line => line.replace(/^\s*[-*•]\s*/, '').trim())
@@ -239,26 +322,7 @@ const mapZohoEvent = (event: ZohoEvent, calendar: ZohoCalendar, index: number): 
   const profileAttachment = attachments.find(attachmentLooksLikeProfile);
   const profileText = `${event.title || ''} ${description} ${profileAttachment?.file_name || profileAttachment?.filename || profileAttachment?.title || ''}`.toLowerCase();
   const hasCV = Boolean(profileAttachment) || /\b(cv|resume|curriculum vitae|portfolio|job description|\bjd\b)\b/i.test(profileText);
-  const attendees: Attendee[] = (event.attendees || [])
-    .filter((attendee): attendee is ZohoAttendee & { email: string } => Boolean(attendee.email))
-    .map(attendee => ({
-      name: attendee.name || attendee.email.split('@')[0],
-      email: attendee.email,
-      status: mapAttendeeStatus(attendee.status),
-      role: attendee.role?.toLowerCase() === 'organizer' ? 'organizer' : 'participant'
-    }));
-
-  const organizer = typeof event.organizer === 'string'
-    ? { email: event.organizer }
-    : event.organizer;
-  if (!attendees.length && organizer?.email) {
-    attendees.push({
-      name: organizer.name || organizer.email.split('@')[0],
-      email: organizer.email,
-      status: 'accepted',
-      role: 'organizer'
-    });
-  }
+  const attendees = getZohoAttendees(event);
 
   const attachmentName = profileAttachment?.file_name || profileAttachment?.filename || profileAttachment?.name || profileAttachment?.title;
   const cvDetails: CVAttachment | undefined = hasCV ? {
@@ -276,6 +340,12 @@ const mapZohoEvent = (event: ZohoEvent, calendar: ZohoCalendar, index: number): 
   const isAllDay = Boolean(event.isallday);
   const status = event.status?.toLowerCase();
   const meetingLink = getMeetingLink(event, description);
+  const notes = [
+    ...splitNotes(description),
+    ...attendees
+      .filter(attendee => attendee.note)
+      .map(attendee => `${attendee.name}: ${attendee.note}`)
+  ];
   const eventId = event.uid || event.id || `event-${index}`;
   const calendarId = event.caluid || calendar.uid || 'calendar';
 
@@ -302,7 +372,7 @@ const mapZohoEvent = (event: ZohoEvent, calendar: ZohoCalendar, index: number): 
     category: hasCV ? 'interview' : 'lead',
     agenda: event.title || 'No agenda provided.',
     description: description || 'No description provided.',
-    notes: splitNotes(description),
+    notes,
     actionItems: [],
     attendees,
     hasCV,
@@ -318,6 +388,30 @@ const fetchEventsForCalendar = async (
 ): Promise<Meeting[]> => {
   if (!calendar.uid) return [];
   const meetings: Meeting[] = [];
+
+  const fetchEventDetailsByUid = async (uid: string): Promise<ZohoEvent | undefined> => {
+    const calendarUid = encodeURIComponent(calendar.uid!).replace(/%3D/gi, '=');
+    const eventUid = encodeURIComponent(uid).replace(/%40/gi, '@');
+    const detailUrl = `${apiBase}/calendars/${calendarUid}/events/${eventUid}`;
+    try {
+      const detail = await requestJson<{ events?: ZohoEvent[] }>(
+        detailUrl,
+        token,
+        'application/json+large'
+      );
+      return (detail.events || []).find(isCalendarEvent);
+    } catch (error) {
+      if (error instanceof ZohoHttpError && error.status === 404) return undefined;
+      throw error;
+    }
+  };
+
+  const fetchEventDetails = async (event: ZohoEvent): Promise<ZohoEvent> => {
+    if (!event.uid) return event;
+    const fullEvent = await fetchEventDetailsByUid(event.uid);
+    if (!fullEvent) return event;
+    return mergeZohoEventDetails(event, fullEvent);
+  };
 
   for (const range of ranges) {
     const url = new URL(`${apiBase}/calendars/${encodeURIComponent(calendar.uid)}/events`);
@@ -342,7 +436,12 @@ const fetchEventsForCalendar = async (
     );
 
     if (!hasRecurringEvents) {
-      meetings.push(...detailedEvents.map((event, index) => mapZohoEvent(event, calendar, index)));
+      const enrichedEvents = await mapWithConcurrency(
+        detailedEvents,
+        4,
+        fetchEventDetails
+      );
+      meetings.push(...enrichedEvents.map((event, index) => mapZohoEvent(event, calendar, index)));
       continue;
     }
 
@@ -356,15 +455,9 @@ const fetchEventsForCalendar = async (
         .map(event => event.uid as string)
     ));
     const missingDetails = recurringUids.filter(uid => !detailsByUid.has(uid));
-    const detailResults = await Promise.all(missingDetails.map(async uid => {
-      const detailUrl = `${apiBase}/calendars/${encodeURIComponent(calendar.uid!)}/events/${encodeURIComponent(uid)}`;
-      const detail = await requestJson<{ events?: ZohoEvent[] }>(
-        detailUrl,
-        token,
-        'application/json+large'
-      );
-      return [uid, detail.events?.[0]] as const;
-    }));
+    const detailResults = await mapWithConcurrency(missingDetails, 4, async uid =>
+      [uid, await fetchEventDetailsByUid(uid)] as const
+    );
     detailResults.forEach(([uid, event]) => {
       if (event) detailsByUid.set(uid, event);
     });
@@ -372,18 +465,7 @@ const fetchEventsForCalendar = async (
     const mergedInstances = instances.map(event => {
       const details = event.uid ? detailsByUid.get(event.uid) : undefined;
       if (!details) return event;
-      return {
-        ...details,
-        ...event,
-        description: event.description || details.description,
-        richtext_description: event.richtext_description || details.richtext_description,
-        attendees: event.attendees?.length ? event.attendees : details.attendees,
-        attachments: event.attachments || details.attachments,
-        attachment: event.attachment || details.attachment,
-        organizer: event.organizer || details.organizer,
-        location: event.location || details.location,
-        url: event.url || details.url
-      };
+      return mergeZohoEventDetails(details, event);
     });
     const instanceKeys = new Set(mergedInstances.map(event =>
       `${event.uid || event.id || ''}:${event.start || event.dateandtime?.start || ''}`
@@ -393,11 +475,58 @@ const fetchEventsForCalendar = async (
       !event.repeat?.length &&
       !instanceKeys.has(`${event.uid || event.id || ''}:${event.start || event.dateandtime?.start || ''}`)
     );
-    const completeEvents = [...mergedInstances, ...missingNonRecurring];
+    const completeEvents = await mapWithConcurrency(
+      [...mergedInstances, ...missingNonRecurring],
+      4,
+      fetchEventDetails
+    );
     meetings.push(...completeEvents.map((event, index) => mapZohoEvent(event, calendar, index)));
   }
 
   return meetings;
+};
+
+const mergeZohoEventDetails = (listEvent: ZohoEvent, detailEvent: ZohoEvent): ZohoEvent => {
+  const attendees = [
+    ...(detailEvent.attendees || []),
+    ...(listEvent.attendees || [])
+  ];
+  const groupAttendees = {
+    ...listEvent.group_attendees,
+    ...detailEvent.group_attendees
+  };
+
+  return {
+    ...listEvent,
+    ...detailEvent,
+    description: detailEvent.description || listEvent.description,
+    richtext_description: detailEvent.richtext_description || listEvent.richtext_description,
+    attendees: attendees.length ? attendees : undefined,
+    group_attendees: groupAttendees,
+    attachments: detailEvent.attachments || listEvent.attachments,
+    attachment: detailEvent.attachment || listEvent.attachment,
+    organizer: detailEvent.organizer || listEvent.organizer,
+    location: detailEvent.location || listEvent.location,
+    url: detailEvent.url || listEvent.url,
+    dateandtime: listEvent.dateandtime || detailEvent.dateandtime
+  };
+};
+
+const mapWithConcurrency = async <T, R>(
+  values: T[],
+  concurrency: number,
+  mapper: (value: T) => Promise<R>
+): Promise<R[]> => {
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex++;
+      results[index] = await mapper(values[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, worker));
+  return results;
 };
 
 export const zohoCalendarService = {

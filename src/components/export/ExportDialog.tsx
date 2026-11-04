@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Laptop,
   FileText,
@@ -40,12 +40,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [fileFormat, setFileFormat] = useState<'pdf' | 'csv'>('pdf');
   const [isProcessing, setIsProcessing] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const [shareURL, setShareURL] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  if (!isOpen) return null;
-
+  const [copyError, setCopyError] = useState('');
   const targetMeetings = meeting ? [meeting] : allMeetings;
+  const targetKey = meeting ? meeting.id : allMeetings.map(item => item.id).join('|');
   const targetTitle = meeting
     ? `Meeting Report: ${meeting.title}`
     : `Nexus Calendar Digest (${dateLabel})`;
@@ -56,10 +56,22 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   const fileName = `${sanitizedName}.${fileFormat}`;
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setShareURL(null);
+    setCopied(false);
+    setCopyError('');
+    setDownloadSuccess(false);
+    setDownloadError('');
+  }, [isOpen, targetKey]);
+
+  if (!isOpen) return null;
+
   // ── Download Handler ──────────────────────────────────────────────────────
   const handleDownload = async () => {
     setIsProcessing(true);
     setDownloadSuccess(false);
+    setDownloadError('');
     try {
       let blob: Blob;
       if (fileFormat === 'pdf') {
@@ -72,6 +84,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
     } catch (err) {
       console.error('Export error:', err);
+      setDownloadError(err instanceof Error ? err.message : 'Unable to create the requested export.');
     } finally {
       setIsProcessing(false);
     }
@@ -85,18 +98,32 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   const handleCopyLink = async () => {
     if (!shareURL) return;
+    setCopyError('');
     try {
       await navigator.clipboard.writeText(shareURL);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      // fallback
-      const el = document.createElement('textarea');
-      el.value = shareURL;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
+      try {
+        const el = document.createElement('textarea');
+        try {
+          el.value = shareURL;
+          el.setAttribute('readonly', '');
+          el.style.position = 'absolute';
+          el.style.left = '-9999px';
+          document.body.appendChild(el);
+          el.select();
+          if (!document.execCommand('copy')) {
+            setCopyError('Could not copy automatically. Select the link above and copy it.');
+            return;
+          }
+        } finally {
+          el.remove();
+        }
+      } catch {
+        setCopyError('Could not copy automatically. Select the link above and copy it.');
+        return;
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }
@@ -178,6 +205,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             </div>
           </div>
         )}
+        {downloadError && (
+          <p role="alert" className="mb-5 rounded-xl border border-[#efcaca] bg-[#fff0f0] px-4 py-3 text-xs text-[#ad4f4f]">
+            {downloadError}
+          </p>
+        )}
 
         {/* Shareable Link Section */}
         <div className="mb-6 rounded-2xl border border-[#cbd9f1] bg-[#f0f4fc] p-4">
@@ -226,6 +258,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
               <p className="text-[11px] text-[#839087]">
                 Shared by {ownerName}. Anyone with this link sees a view-only spreadsheet.
               </p>
+              {copyError && <p role="status" className="text-[11px] text-[#ad4f4f]">{copyError}</p>}
             </div>
           )}
         </div>

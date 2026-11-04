@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CalendarDays, Video } from 'lucide-react';
-import { isMeetingCompleted, type Meeting } from '../../types/meeting';
+import { getUpcomingMeetingsForToday, type Meeting } from '../../types/meeting';
 
 interface SchedulePanelProps {
   meetings: Meeting[];
@@ -10,10 +10,13 @@ interface SchedulePanelProps {
 const accents = ['green', 'purple', 'amber', 'blue'] as const;
 
 export const SchedulePanel: React.FC<SchedulePanelProps> = ({ meetings, onOpenDetails }) => {
-  const today = new Date().toISOString().split('T')[0];
-  const upcoming = meetings
-    .filter(meeting => meeting.date === today && !isMeetingCompleted(meeting) && meeting.status !== 'cancelled')
-    .slice(0, 10);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const upcoming = getUpcomingMeetingsForToday(meetings, now).slice(0, 10);
 
   return (
     <section className="rounded-[22px] border border-white/70 bg-white/80 p-4 shadow-[0_12px_34px_rgba(89,117,95,0.10)] sm:p-5">
