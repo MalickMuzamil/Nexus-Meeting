@@ -1,4 +1,5 @@
 import type { Attendee, CVAttachment, DateFilter, Meeting } from '../types/meeting';
+import { isHolidayCalendar, isHolidayEvent } from './holidayFilter';
 
 type ZohoCalendar = {
   uid?: string;
@@ -413,6 +414,16 @@ const fetchEventsForCalendar = async (
     return mergeZohoEventDetails(event, fullEvent);
   };
 
+  // Lambda to check if a raw Zoho event looks like a holiday/observance
+  const isNotHolidayEvent = (event: ZohoEvent): boolean => !isHolidayEvent({
+    title: event.title,
+    description: event.description || event.richtext_description,
+    isAllDay: Boolean(event.isallday),
+    attendeesCount: (event.attendees || []).length,
+    hasMeetingLink: Boolean(getMeetingLink(event, event.description || '')),
+    calendarName: calendar.name
+  });
+
   for (const range of ranges) {
     const url = new URL(`${apiBase}/calendars/${encodeURIComponent(calendar.uid)}/events`);
     url.searchParams.set('range', JSON.stringify(range));
@@ -422,7 +433,7 @@ const fetchEventsForCalendar = async (
       token,
       'application/json+large'
     );
-    const detailedEvents = (response.events || []).filter(isCalendarEvent);
+    const detailedEvents = (response.events || []).filter(isCalendarEvent).filter(isNotHolidayEvent);
     const instanceUrl = new URL(url);
     instanceUrl.searchParams.set('byinstance', 'true');
     const instanceResponse = await requestJson<{ events?: ZohoEvent[] }>(
@@ -430,7 +441,7 @@ const fetchEventsForCalendar = async (
       token,
       'application/json+large'
     );
-    const instances = (instanceResponse.events || []).filter(isCalendarEvent);
+    const instances = (instanceResponse.events || []).filter(isCalendarEvent).filter(isNotHolidayEvent);
     const hasRecurringEvents = [...detailedEvents, ...instances].some(event =>
       Boolean(event.rrule || event.repeat?.length)
     );
@@ -539,7 +550,9 @@ export const zohoCalendarService = {
       calendarsUrl.toString(),
       accessToken
     );
-    const calendars = (calendarResponse.calendars || []).filter(calendar => calendar.uid && calendar.status !== false);
+    const calendars = (calendarResponse.calendars || []).filter(
+      calendar => calendar.uid && calendar.status !== false && !isHolidayCalendar(calendar.name)
+    );
     const ranges = getDateRanges(filter.startDate, filter.endDate);
     let nextIndex = 0;
     const results: Meeting[][] = [];
@@ -552,7 +565,17 @@ export const zohoCalendarService = {
     await Promise.all(Array.from({ length: Math.min(4, calendars.length) }, worker));
 
     const uniqueMeetings = new Map<string, Meeting>();
-    results.flat().forEach(meeting => uniqueMeetings.set(meeting.id, meeting));
+    results.flat().forEach(meeting => {
+      // Final safety net: skip any holiday events that slipped through
+      if (isHolidayEvent({
+        title: meeting.title,
+        description: meeting.description,
+        isAllDay: meeting.startTime === 'All day' || meeting.endTime === 'All day',
+        attendeesCount: meeting.attendees.length,
+        hasMeetingLink: Boolean(meeting.meetingLink)
+      })) return;
+      uniqueMeetings.set(meeting.id, meeting);
+    });
     return Array.from(uniqueMeetings.values()).sort((a, b) =>
       (a.startTimestamp || 0) - (b.startTimestamp || 0)
     );

@@ -1,6 +1,6 @@
 import type { DateFilter, Meeting } from '../types/meeting';
 
-const CACHE_KEY = 'nexus_zoho_calendar_session_cache_v3';
+const CACHE_KEY = 'nexus_zoho_calendar_session_cache_v4';
 
 type CacheStore = Record<string, Meeting[]>;
 

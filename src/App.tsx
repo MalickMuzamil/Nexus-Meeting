@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getLocalDateString, type Meeting, type DateFilter } from './types/meeting';
 import { parseShareTokenFromURL, decodeSharePayloadFromToken } from './types/shareUtils';
 import { zohoCalendarService } from './services/zohoCalendar';
+import { isHolidayEvent } from './services/holidayFilter';
 import {
   getStoredZohoSession,
   zohoAuthService,
@@ -144,7 +145,15 @@ export const App: React.FC = () => {
     setIsLoading(true);
     try {
       if (!calendarMeetings) {
-        calendarMeetings = await zohoCalendarService.fetchMeetings(filter, zohoToken, zohoLocation);
+        const rawMeetings = await zohoCalendarService.fetchMeetings(filter, zohoToken, zohoLocation);
+        // Filter out any holiday/observance events at the UI layer (safety net)
+        calendarMeetings = rawMeetings.filter(m => !isHolidayEvent({
+          title: m.title,
+          description: m.description,
+          isAllDay: m.startTime === 'All day' || m.endTime === 'All day',
+          attendeesCount: m.attendees.length,
+          hasMeetingLink: Boolean(m.meetingLink)
+        }));
         setMeetings(calendarMeetings);
       }
       setMeetings(calendarMeetings);
@@ -198,6 +207,15 @@ export const App: React.FC = () => {
   // ── Filtered list ─────────────────────────────────────────────────────────
   const filteredMeetings = useMemo(() => {
     return meetings.filter(m => {
+      // Skip holiday/observance events (final UI safety net)
+      if (isHolidayEvent({
+        title: m.title,
+        description: m.description,
+        isAllDay: m.startTime === 'All day' || m.endTime === 'All day',
+        attendeesCount: m.attendees.length,
+        hasMeetingLink: Boolean(m.meetingLink)
+      })) return false;
+
       const q = searchQuery.toLowerCase();
       const matchesQuery =
         m.title.toLowerCase().includes(q) ||
